@@ -35,7 +35,7 @@ This application monitors Costco UK products for stock changes and price drops, 
 ### Docker Installation (Recommended)
 
 ```bash
-git clone https://github.com/yourusername/costco-tracker.git
+git clone https://github.com/Ropaxyz/CostcoUKTracker.git
 cd costco-tracker
 
 cp .env.example .env
@@ -49,7 +49,7 @@ Access the application at `http://localhost:8000`
 ### Manual Installation
 
 ```bash
-git clone https://github.com/yourusername/costco-tracker.git
+git clone https://github.com/Ropaxyz/CostcoUKTracker.git
 cd costco-tracker
 
 # Create and activate virtual environment
