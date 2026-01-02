@@ -1,0 +1,42 @@
+# Costco UK Stock Tracker - Systemd Service File
+#
+# Installation:
+#   1. Copy this file to /etc/systemd/system/
+#   2. Edit the paths and user as needed
+#   3. Run: sudo systemctl daemon-reload
+#   4. Run: sudo systemctl enable costco-tracker
+#   5. Run: sudo systemctl start costco-tracker
+#
+# Commands:
+#   sudo systemctl status costco-tracker   # Check status
+#   sudo systemctl restart costco-tracker  # Restart
+#   sudo journalctl -u costco-tracker -f   # View logs
+
+[Unit]
+Description=Costco UK Stock Tracker
+After=network.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=YOUR_USERNAME
+Group=YOUR_USERNAME
+WorkingDirectory=/path/to/costco-tracker
+Environment="PATH=/path/to/costco-tracker/venv/bin"
+ExecStart=/path/to/costco-tracker/venv/bin/python main.py
+Restart=always
+RestartSec=10
+
+# Security hardening
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=/path/to/costco-tracker/data
+
+# Resource limits
+MemoryMax=512M
+CPUQuota=50%
+
+[Install]
+WantedBy=multi-user.target

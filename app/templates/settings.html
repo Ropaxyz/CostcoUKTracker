@@ -1,0 +1,265 @@
+{% extends "base.html" %}
+
+{% block title %}Settings - Costco UK Tracker{% endblock %}
+
+{% block content %}
+<div class="settings-page">
+    <h1>Settings</h1>
+
+    {% if request.query_params.get('success') %}
+    <div class="alert alert-success">
+        {% if request.query_params.get('success') == 'notifications' %}
+        Notification settings saved successfully!
+        {% elif request.query_params.get('success') == 'scheduler' %}
+        Scheduler settings saved successfully!
+        {% elif request.query_params.get('success') == 'checkout' %}
+        Checkout settings saved successfully!
+        {% elif request.query_params.get('success') == 'password_changed' %}
+        Password changed successfully!
+        {% endif %}
+    </div>
+    {% endif %}
+
+    <!-- Notification Settings -->
+    <div class="card">
+        <h2>Notification Channels</h2>
+        <p class="form-help">Configure where you want to receive alerts.</p>
+
+        <form id="notifications-form" method="POST" action="/api/settings/notifications">
+            <div class="settings-grid">
+                <!-- Email -->
+                <div class="setting-card {% if settings.smtp_enabled %}enabled{% endif %}">
+                    <div class="setting-header">
+                        <h3>Email</h3>
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="smtp_enabled" value="true" {% if settings.smtp_enabled %}checked{% endif %}>
+                            Enable Email
+                        </label>
+                    </div>
+                    <p>Receive alerts via email using SMTP.</p>
+                    <div class="form-group">
+                        <label for="smtp_host">SMTP Host</label>
+                        <input type="text" id="smtp_host" name="smtp_host" value="{{ settings.smtp_host }}" placeholder="smtp.gmail.com">
+                    </div>
+                    <div class="form-group">
+                        <label for="smtp_port">SMTP Port</label>
+                        <input type="number" id="smtp_port" name="smtp_port" value="{{ settings.smtp_port }}" placeholder="587">
+                    </div>
+                    <div class="form-group">
+                        <label for="smtp_username">Username</label>
+                        <input type="text" id="smtp_username" name="smtp_username" value="{{ settings.smtp_username }}" placeholder="your@email.com">
+                    </div>
+                    <div class="form-group">
+                        <label for="smtp_password">Password</label>
+                        <input type="password" id="smtp_password" name="smtp_password" value="{{ settings.smtp_password }}" placeholder="app-password">
+                    </div>
+                    <div class="form-group">
+                        <label for="smtp_from_email">From Email</label>
+                        <input type="email" id="smtp_from_email" name="smtp_from_email" value="{{ settings.smtp_from_email }}" placeholder="your@email.com">
+                    </div>
+                    <button type="button" class="btn btn-secondary" onclick="testNotification('email')">Send Test Email</button>
+                </div>
+
+                <!-- Telegram -->
+                <div class="setting-card {% if settings.telegram_enabled %}enabled{% endif %}">
+                    <div class="setting-header">
+                        <h3>Telegram</h3>
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="telegram_enabled" value="true" {% if settings.telegram_enabled %}checked{% endif %}>
+                            Enable Telegram
+                        </label>
+                    </div>
+                    <p>Receive alerts via Telegram bot messages.</p>
+                    <div class="form-group">
+                        <label for="telegram_bot_token">Bot Token</label>
+                        <input type="text" id="telegram_bot_token" name="telegram_bot_token" value="{{ settings.telegram_bot_token }}" placeholder="123456:ABC...">
+                    </div>
+                    <div class="form-group">
+                        <label for="telegram_chat_id">Chat ID</label>
+                        <input type="text" id="telegram_chat_id" name="telegram_chat_id" value="{{ settings.telegram_chat_id }}" placeholder="your-chat-id">
+                    </div>
+                    <button type="button" class="btn btn-secondary" onclick="testNotification('telegram')">Send Test Message</button>
+                </div>
+
+                <!-- Discord -->
+                <div class="setting-card {% if settings.discord_enabled %}enabled{% endif %}">
+                    <div class="setting-header">
+                        <h3>Discord</h3>
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="discord_enabled" value="true" {% if settings.discord_enabled %}checked{% endif %}>
+                            Enable Discord
+                        </label>
+                    </div>
+                    <p>Receive alerts via Discord webhook.</p>
+                    <div class="form-group">
+                        <label for="discord_webhook_url">Webhook URL</label>
+                        <input type="url" id="discord_webhook_url" name="discord_webhook_url" value="{{ settings.discord_webhook_url }}" placeholder="https://discord.com/api/webhooks/...">
+                    </div>
+                    <button type="button" class="btn btn-secondary" onclick="testNotification('discord')">Send Test Message</button>
+                </div>
+
+                <!-- Pushover -->
+                <div class="setting-card {% if settings.pushover_enabled %}enabled{% endif %}">
+                    <div class="setting-header">
+                        <h3>Pushover</h3>
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="pushover_enabled" value="true" {% if settings.pushover_enabled %}checked{% endif %}>
+                            Enable Pushover
+                        </label>
+                    </div>
+                    <p>Receive push notifications via Pushover app.</p>
+                    <div class="form-group">
+                        <label for="pushover_app_token">App Token</label>
+                        <input type="text" id="pushover_app_token" name="pushover_app_token" value="{{ settings.pushover_app_token }}" placeholder="your-app-token">
+                    </div>
+                    <div class="form-group">
+                        <label for="pushover_user_key">User Key</label>
+                        <input type="text" id="pushover_user_key" name="pushover_user_key" value="{{ settings.pushover_user_key }}" placeholder="your-user-key">
+                    </div>
+                    <button type="button" class="btn btn-secondary" onclick="testNotification('pushover')">Send Test Notification</button>
+                </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary">Save Notification Settings</button>
+        </form>
+    </div>
+
+    <!-- Scheduler Settings -->
+    <div class="card">
+        <h2>Scheduler Settings</h2>
+
+        <form method="POST" action="/api/settings/scheduler">
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="default_poll_interval_minutes">Default Poll Interval (minutes)</label>
+                    <input type="number" id="default_poll_interval_minutes" name="default_poll_interval_minutes" value="{{ settings.default_poll_interval_minutes }}" min="15" max="180">
+                </div>
+                <div class="form-group">
+                    <label for="min_poll_interval_minutes">Min Poll Interval (minutes)</label>
+                    <input type="number" id="min_poll_interval_minutes" name="min_poll_interval_minutes" value="{{ settings.min_poll_interval_minutes }}" min="5" max="60">
+                </div>
+                <div class="form-group">
+                    <label for="max_poll_interval_minutes">Max Poll Interval (minutes)</label>
+                    <input type="number" id="max_poll_interval_minutes" name="max_poll_interval_minutes" value="{{ settings.max_poll_interval_minutes }}" min="60" max="360">
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="request_timeout_seconds">Request Timeout (seconds)</label>
+                    <input type="number" id="request_timeout_seconds" name="request_timeout_seconds" value="{{ settings.request_timeout_seconds }}" min="10" max="120">
+                </div>
+                <div class="form-group">
+                    <label class="checkbox-label">
+                        <input type="checkbox" name="safe_mode" value="true" {% if settings.safe_mode %}checked{% endif %}>
+                        Safe Mode (limits request frequency)
+                    </label>
+                </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary">Save Scheduler Settings</button>
+        </form>
+    </div>
+
+    <!-- Assisted Checkout (Optional) -->
+    <div class="card">
+        <h2>Assisted Checkout (Optional)</h2>
+
+        <div class="warning-box">
+            <strong>Warning:</strong> Using automated login may violate Costco's Terms of Service. Use at your own risk. This feature does NOT auto-complete purchases - it only adds items to your basket.
+        </div>
+
+        <form method="POST" action="/api/settings/checkout">
+            <div class="form-group">
+                <label class="checkbox-label">
+                    <input type="checkbox" name="auto_add_to_basket_enabled" value="true" {% if settings.auto_add_to_basket_enabled %}checked{% endif %}>
+                    Enable Auto-Add to Basket
+                </label>
+            </div>
+
+            <div class="form-group">
+                <label for="costco_email">Costco Account Email</label>
+                <input type="email" id="costco_email" name="costco_email" value="{{ settings.costco_email }}" placeholder="your@email.com">
+            </div>
+
+            <div class="form-group">
+                <label for="costco_password">Costco Password</label>
+                <input type="password" id="costco_password" name="costco_password" placeholder="Leave blank to keep existing">
+                <small>Password will be encrypted automatically. Leave blank to keep existing password.</small>
+            </div>
+
+            <button type="submit" class="btn btn-primary">Save Checkout Settings</button>
+        </form>
+    </div>
+
+    <!-- Kill Switch -->
+    <div class="card">
+        <h2>Emergency Controls</h2>
+
+        <div class="control-buttons">
+            <button
+                class="btn {% if settings.kill_switch %}btn-success{% else %}btn-danger{% endif %}"
+                hx-post="/api/kill-switch/{% if settings.kill_switch %}off{% else %}on{% endif %}"
+                hx-swap="none"
+            >
+                {% if settings.kill_switch %}
+                Resume Automation
+                {% else %}
+                Stop All Automation
+                {% endif %}
+            </button>
+        </div>
+
+        <p class="form-help">
+            The kill switch immediately stops all automated scraping and basket actions. Use this if you're experiencing issues or want to pause the tracker.
+        </p>
+    </div>
+
+    <!-- Change Password -->
+    <div class="card">
+        <h2>Change Site Password</h2>
+        <form method="POST" action="/change-password" class="inline-form">
+            <div class="form-group">
+                <label for="current_password">Current Password</label>
+                <input type="password" id="current_password" name="current_password" required>
+            </div>
+            <div class="form-group">
+                <label for="new_password">New Password</label>
+                <input type="password" id="new_password" name="new_password" required minlength="8">
+            </div>
+            <button type="submit" class="btn btn-primary">Update Password</button>
+        </form>
+    </div>
+</div>
+
+<script>
+async function testNotification(channel) {
+    const button = event.target;
+    const originalText = button.textContent;
+    button.disabled = true;
+    button.textContent = 'Sending...';
+
+    try {
+        const response = await fetch(`/api/test-notification/${channel}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            alert(`Success! ${result.message}`);
+        } else {
+            alert(`Error: ${result.error || 'Failed to send test notification'}`);
+        }
+    } catch (error) {
+        alert(`Error: ${error.message}`);
+    } finally {
+        button.disabled = false;
+        button.textContent = originalText;
+    }
+}
+</script>
+{% endblock %}

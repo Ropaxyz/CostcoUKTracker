@@ -1,0 +1,305 @@
+{% extends "base.html" %}
+
+{% block title %}{{ product.name or product.item_number }} - Costco UK Tracker{% endblock %}
+
+{% block head %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="product-detail">
+    <div class="breadcrumb">
+        <a href="/">Dashboard</a> / {{ product.name or product.item_number }}
+    </div>
+
+    {% if request.query_params.get('success') == 'settings_saved' %}
+    <div class="alert alert-success">
+        Product settings saved successfully!
+    </div>
+    {% endif %}
+
+    <!-- Product Header -->
+    <div class="card product-header-card">
+        <div class="product-header">
+            {% if product.image_url %}
+            <img src="{{ product.image_url }}" alt="{{ product.name }}" class="product-image">
+            {% endif %}
+            <div class="product-header-info">
+                <h1>{{ product.name or 'Unknown Product' }}</h1>
+                <p class="product-item-number">Item #{{ product.item_number }}</p>
+
+                <div class="product-stats">
+                    <div class="stat">
+                        <span class="stat-label">Current Price</span>
+                        <span class="stat-value">
+                            {% if product.current_price %}
+                            &pound;{{ "%.2f"|format(product.current_price) }}
+                            {% if product.checkout_discount %}
+                            <br><small style="text-decoration: line-through; color: #666;">&pound;{{ "%.2f"|format(product.current_price) }}</small>
+                            <br><strong style="color: #e74c3c;">&pound;{{ "%.2f"|format(product.effective_price) }}</strong>
+                            {% endif %}
+                            {% else %}
+                            N/A
+                            {% endif %}
+                        </span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-label">Lowest Price</span>
+                        <span class="stat-value text-success">
+                            {% if product.lowest_price %}
+                            &pound;{{ "%.2f"|format(product.lowest_price) }}
+                            {% else %}
+                            N/A
+                            {% endif %}
+                        </span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-label">Highest Price</span>
+                        <span class="stat-value text-danger">
+                            {% if product.highest_price %}
+                            &pound;{{ "%.2f"|format(product.highest_price) }}
+                            {% else %}
+                            N/A
+                            {% endif %}
+                        </span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-label">Status</span>
+                        <span class="stat-value">
+                            {% if product.stock_status == 'in_stock' %}
+                            <span class="badge badge-success">In Stock</span>
+                            {% elif product.stock_status == 'out_of_stock' %}
+                            <span class="badge badge-danger">Out of Stock</span>
+                            {% elif product.stock_status == 'warehouse_only' %}
+                            <span class="badge badge-info">Warehouse Only</span>
+                            {% else %}
+                            <span class="badge badge-secondary">{{ product.stock_status }}</span>
+                            {% endif %}
+                        </span>
+                    </div>
+                </div>
+
+                {% if product.checkout_discount_text %}
+                <div class="checkout-discount-banner" style="background: #fffbeb; border: 2px solid #f59e0b; border-radius: 8px; padding: 12px; margin-top: 15px;">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <div>
+                            <strong style="color: #92400e;">{{ product.checkout_discount_text }}</strong>
+                            {% if product.checkout_discount %}
+                            <br><small style="color: #78350f;">Save £{{ "%.2f"|format(product.checkout_discount) }} at checkout!</small>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+
+                <div class="product-actions">
+                    <a href="{{ product.url }}" target="_blank" class="btn btn-primary">View on Costco</a>
+                    <button
+                        class="btn"
+                        hx-post="/products/{{ product.id }}/refresh"
+                        hx-swap="none"
+                    >Refresh Now</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Price Chart -->
+    <div class="card">
+        <h2>Price History (90 Days)</h2>
+        <div class="chart-container">
+            <canvas id="priceChart"></canvas>
+        </div>
+    </div>
+
+    <!-- Settings -->
+    <div class="card">
+        <h2>Tracking Settings</h2>
+        <form class="settings-form" method="POST" action="/products/{{ product.id }}/update">
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="target_price">Target Price (&pound;)</label>
+                    <input
+                        type="number"
+                        id="target_price"
+                        name="target_price"
+                        value="{{ product.target_price or '' }}"
+                        step="0.01"
+                        min="0"
+                    >
+                </div>
+                <div class="form-group">
+                    <label for="poll_interval_minutes">Check Interval (minutes)</label>
+                    <input
+                        type="number"
+                        id="poll_interval_minutes"
+                        name="poll_interval_minutes"
+                        value="{{ product.poll_interval_minutes or '' }}"
+                        min="15"
+                        max="180"
+                        placeholder="Default: 45"
+                    >
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="checkbox-label">
+                        <input type="checkbox" name="notify_back_in_stock" value="true" {% if product.notify_back_in_stock %}checked{% endif %}>
+                        Notify when back in stock
+                    </label>
+                </div>
+                <div class="form-group">
+                    <label class="checkbox-label">
+                        <input type="checkbox" name="notify_price_drop" value="true" {% if product.notify_price_drop %}checked{% endif %}>
+                        Notify on price drop
+                    </label>
+                </div>
+                <div class="form-group">
+                    <label class="checkbox-label">
+                        <input type="checkbox" name="notify_target_price" value="true" {% if product.notify_target_price %}checked{% endif %}>
+                        Notify at target price
+                    </label>
+                </div>
+                <div class="form-group">
+                    <label class="checkbox-label">
+                        <input type="checkbox" name="notify_lowest_ever" value="true" {% if product.notify_lowest_ever %}checked{% endif %}>
+                        Notify at lowest ever price
+                    </label>
+                </div>
+            </div>
+
+            <div class="form-section">
+                <h3>Assisted Checkout</h3>
+                <p class="form-help">Automatically add to basket when conditions are met. Does NOT complete purchase.</p>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="auto_add_to_basket" value="true" {% if product.auto_add_to_basket %}checked{% endif %}>
+                            Auto-add to basket
+                        </label>
+                    </div>
+                    <div class="form-group">
+                        <label for="auto_add_quantity">Quantity</label>
+                        <input
+                            type="number"
+                            id="auto_add_quantity"
+                            name="auto_add_quantity"
+                            value="{{ product.auto_add_quantity }}"
+                            min="1"
+                            max="10"
+                        >
+                    </div>
+                    <div class="form-group">
+                        <label for="auto_add_max_price">Max Price (&pound;)</label>
+                        <input
+                            type="number"
+                            id="auto_add_max_price"
+                            name="auto_add_max_price"
+                            value="{{ product.auto_add_max_price or '' }}"
+                            step="0.01"
+                            min="0"
+                            placeholder="No limit"
+                        >
+                    </div>
+                </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary">Save Settings</button>
+        </form>
+    </div>
+
+    <!-- Stock History -->
+    <div class="card">
+        <h2>Stock History</h2>
+        <div class="history-list">
+            {% for event in stock_history %}
+            <div class="history-item">
+                <span class="history-time">{{ event.recorded_at.strftime('%Y-%m-%d %H:%M') }}</span>
+                <span class="history-change">
+                    {% if event.previous_status %}
+                    {{ event.previous_status }} &rarr;
+                    {% endif %}
+                    <strong>{{ event.status }}</strong>
+                </span>
+            </div>
+            {% else %}
+            <p class="text-muted">No stock history recorded yet.</p>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Recent Alerts -->
+    <div class="card">
+        <h2>Recent Alerts</h2>
+        <div class="alerts-list">
+            {% for alert in alerts %}
+            <div class="alert-item">
+                <span class="alert-time">{{ alert.sent_at.strftime('%Y-%m-%d %H:%M') }}</span>
+                <span class="alert-type badge">{{ alert.alert_type }}</span>
+                <span class="alert-message">{{ alert.message }}</span>
+                <span class="alert-channels text-muted">via {{ alert.channels_sent }}</span>
+            </div>
+            {% else %}
+            <p class="text-muted">No alerts sent yet.</p>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Price history chart
+const priceData = [
+    {% for h in price_history %}
+    { x: '{{ h.recorded_at.strftime("%Y-%m-%d %H:%M") }}', y: {{ h.price }} },
+    {% endfor %}
+];
+
+if (priceData.length > 0) {
+    const ctx = document.getElementById('priceChart').getContext('2d');
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            datasets: [{
+                label: 'Price',
+                data: priceData,
+                borderColor: '#005DAB',
+                backgroundColor: 'rgba(0, 93, 171, 0.1)',
+                fill: true,
+                tension: 0.1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                x: {
+                    type: 'category',
+                    title: { display: true, text: 'Date' }
+                },
+                y: {
+                    title: { display: true, text: 'Price' },
+                    ticks: {
+                        callback: function(value) {
+                            return '\u00A3' + value.toFixed(2);
+                        }
+                    }
+                }
+            },
+            plugins: {
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return '\u00A3' + context.parsed.y.toFixed(2);
+                        }
+                    }
+                }
+            }
+        }
+    });
+}
+</script>
+{% endblock %}

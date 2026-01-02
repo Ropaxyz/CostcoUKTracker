@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Setup - Costco UK Tracker</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body class="auth-page">
+    <div class="auth-container">
+        <div class="auth-box setup-box">
+            <h1>Welcome to Costco UK Tracker</h1>
+            <p class="auth-subtitle">Let's set up your tracker. You'll only need to do this once.</p>
+
+            <form method="POST" action="/setup" class="auth-form">
+                <div class="form-section">
+                    <h2>Site Password</h2>
+                    <p class="form-help">This password protects access to your tracker.</p>
+
+                    <div class="form-group">
+                        <label for="site_password">Password</label>
+                        <input
+                            type="password"
+                            id="site_password"
+                            name="site_password"
+                            required
+                            minlength="8"
+                            placeholder="Choose a strong password"
+                        >
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-primary btn-block">Complete Setup</button>
+            </form>
+
+            <div class="setup-info">
+                <h3>What happens next?</h3>
+                <ul>
+                    <li>You'll be logged in automatically</li>
+                    <li>Add Costco UK products to track</li>
+                    <li>Configure notifications in Settings</li>
+                    <li>The tracker runs in the background</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

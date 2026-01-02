@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+
+{% block title %}Status - Costco UK Tracker{% endblock %}
+
+{% block content %}
+<div class="status-page">
+    <h1>System Status</h1>
+
+    <!-- Current Status -->
+    <div class="card">
+        <h2>Scheduler Status</h2>
+        <div class="status-grid">
+            <div class="status-item large">
+                <span class="status-label">Scheduler</span>
+                <span class="status-value {% if scheduler_running %}text-success{% else %}text-danger{% endif %}">
+                    {% if scheduler_running %}Running{% else %}Stopped{% endif %}
+                </span>
+            </div>
+            <div class="status-item large">
+                <span class="status-label">Next Run</span>
+                <span class="status-value">
+                    {% if next_run %}{{ next_run.strftime('%Y-%m-%d %H:%M:%S') }}{% else %}N/A{% endif %}
+                </span>
+            </div>
+        </div>
+
+        <div class="status-actions">
+            <button
+                class="btn btn-primary"
+                hx-post="/api/scheduler/run"
+                hx-swap="none"
+            >Run Now</button>
+        </div>
+    </div>
+
+    <!-- Products with Errors -->
+    {% if error_products %}
+    <div class="card card-warning">
+        <h2>Products with Errors</h2>
+        <div class="error-list">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Product</th>
+                        <th>Errors</th>
+                        <th>Last Error</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for product in error_products %}
+                    <tr>
+                        <td>
+                            <a href="/product/{{ product.id }}">{{ product.name or product.item_number }}</a>
+                        </td>
+                        <td>{{ product.consecutive_errors }}</td>
+                        <td>
+                            <span title="{{ product.last_error }}">
+                                {{ product.last_error[:50] }}{% if product.last_error|length > 50 %}...{% endif %}
+                            </span>
+                            <br>
+                            <small class="text-muted">{{ product.last_error_at.strftime('%Y-%m-%d %H:%M') if product.last_error_at else '' }}</small>
+                        </td>
+                        <td>
+                            <button
+                                class="btn btn-sm"
+                                hx-post="/products/{{ product.id }}/refresh"
+                                hx-swap="none"
+                            >Retry</button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Recent Runs -->
+    <div class="card">
+        <h2>Recent Scheduler Runs</h2>
+        <div class="runs-list">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Started</th>
+                        <th>Completed</th>
+                        <th>Products</th>
+                        <th>Updated</th>
+                        <th>Errors</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for run in runs %}
+                    <tr>
+                        <td>{{ run.run_started_at.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                        <td>{{ run.run_completed_at.strftime('%H:%M:%S') if run.run_completed_at else 'In progress' }}</td>
+                        <td>{{ run.products_checked }}</td>
+                        <td>{{ run.products_updated }}</td>
+                        <td class="{% if run.errors_count > 0 %}text-danger{% endif %}">{{ run.errors_count }}</td>
+                        <td>
+                            <span class="badge {% if run.status == 'completed' %}badge-success{% elif run.status == 'running' %}badge-info{% else %}badge-warning{% endif %}">
+                                {{ run.status }}
+                            </span>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="6" class="text-muted text-center">No runs recorded yet</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

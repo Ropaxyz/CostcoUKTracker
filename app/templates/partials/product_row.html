@@ -1,0 +1,85 @@
+<tr class="product-row" id="product-{{ product.id }}">
+    <td class="product-info">
+        <div class="product-name">
+            <a href="/product/{{ product.id }}">
+                {{ product.name or product.item_number }}
+            </a>
+        </div>
+        <div class="product-meta">
+            Item #{{ product.item_number }}
+            {% if product.is_clearance_price %}
+            <span class="badge badge-warning">Clearance</span>
+            {% endif %}
+        </div>
+    </td>
+    <td class="product-status">
+        {% if product.stock_status == 'in_stock' %}
+        <span class="badge badge-success">In Stock</span>
+        {% elif product.stock_status == 'out_of_stock' %}
+        <span class="badge badge-danger">Out of Stock</span>
+        {% elif product.stock_status == 'warehouse_only' %}
+        <span class="badge badge-info">Warehouse Only</span>
+        {% elif product.stock_status == 'removed' %}
+        <span class="badge badge-dark">Removed</span>
+        {% else %}
+        <span class="badge badge-secondary">Unknown</span>
+        {% endif %}
+    </td>
+    <td class="product-price">
+        {% if product.current_price %}
+        <div class="price-current">&pound;{{ "%.2f"|format(product.current_price) }}</div>
+        {% if product.previous_price and product.previous_price != product.current_price %}
+        <div class="price-change {% if product.current_price < product.previous_price %}text-success{% else %}text-danger{% endif %}">
+            {% if product.current_price < product.previous_price %}
+            &darr; {{ "%.1f"|format(((product.previous_price - product.current_price) / product.previous_price) * 100) }}%
+            {% else %}
+            &uarr; {{ "%.1f"|format(((product.current_price - product.previous_price) / product.previous_price) * 100) }}%
+            {% endif %}
+        </div>
+        {% endif %}
+        {% if product.lowest_price and product.current_price == product.lowest_price %}
+        <div class="price-lowest">Lowest ever!</div>
+        {% endif %}
+        {% else %}
+        <span class="text-muted">N/A</span>
+        {% endif %}
+    </td>
+    <td class="product-target">
+        {% if product.target_price %}
+        &pound;{{ "%.2f"|format(product.target_price) }}
+        {% if product.current_price and product.current_price <= product.target_price %}
+        <span class="badge badge-success">Hit!</span>
+        {% endif %}
+        {% else %}
+        <span class="text-muted">-</span>
+        {% endif %}
+    </td>
+    <td class="product-checked">
+        {% if product.last_checked_at %}
+        <span title="{{ product.last_checked_at.strftime('%Y-%m-%d %H:%M:%S') }}">
+            {{ product.last_checked_at.strftime('%H:%M') }}
+        </span>
+        {% if product.consecutive_errors > 0 %}
+        <span class="badge badge-warning" title="{{ product.last_error }}">{{ product.consecutive_errors }} errors</span>
+        {% endif %}
+        {% else %}
+        <span class="text-muted">Never</span>
+        {% endif %}
+    </td>
+    <td class="product-actions">
+        <button
+            class="btn btn-sm"
+            hx-post="/products/{{ product.id }}/refresh"
+            hx-target="#product-{{ product.id }}"
+            hx-swap="outerHTML"
+        >Refresh</button>
+        <a href="/product/{{ product.id }}" class="btn btn-sm">Details</a>
+        <button
+            class="btn btn-sm btn-danger"
+            hx-delete="/products/{{ product.id }}"
+            hx-target="#product-{{ product.id }}"
+            hx-swap="outerHTML"
+            hx-confirm="Remove this product from tracking?"
+        >Remove</button>
+    </td>
+</tr>

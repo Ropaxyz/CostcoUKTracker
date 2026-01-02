@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Costco UK Tracker{% endblock %}
+
+{% block head %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="dashboard">
+    <!-- Status Bar -->
+    <div class="status-bar">
+        <div class="status-item">
+            <span class="status-label">Scheduler</span>
+            <span class="status-value {% if not kill_switch %}text-success{% else %}text-danger{% endif %}">
+                {% if kill_switch %}STOPPED{% else %}Running{% endif %}
+            </span>
+        </div>
+        <div class="status-item">
+            <span class="status-label">Mode</span>
+            <span class="status-value">{% if safe_mode %}Safe{% else %}Aggressive{% endif %}</span>
+        </div>
+        <div class="status-item">
+            <span class="status-label">Last Check</span>
+            <span class="status-value">
+                {% if last_run %}
+                    {{ last_run.run_completed_at.strftime('%H:%M') if last_run.run_completed_at else 'In progress' }}
+                {% else %}
+                    Never
+                {% endif %}
+            </span>
+        </div>
+        <div class="status-item">
+            <span class="status-label">Next Check</span>
+            <span class="status-value">
+                {% if next_run %}{{ next_run.strftime('%H:%M') }}{% else %}N/A{% endif %}
+            </span>
+        </div>
+        <div class="status-actions">
+            <button
+                class="btn btn-sm"
+                hx-post="/api/scheduler/run"
+                hx-swap="none"
+                hx-indicator="#refresh-indicator"
+            >
+                <span id="refresh-indicator" class="htmx-indicator">...</span>
+                Refresh All
+            </button>
+        </div>
+    </div>
+
+    <!-- Add Product Form -->
+    <div class="card add-product-card">
+        <h2>Add Product</h2>
+        <form
+            hx-post="/products/add"
+            hx-target="#products-list"
+            hx-swap="afterbegin"
+            hx-indicator="#add-indicator"
+            class="add-product-form"
+        >
+            <div class="form-row">
+                <div class="form-group flex-grow">
+                    <input
+                        type="text"
+                        name="url_or_item"
+                        placeholder="Enter Costco URL or Item Number (e.g., 560513)"
+                        required
+                    >
+                </div>
+                <div class="form-group">
+                    <input
+                        type="number"
+                        name="target_price"
+                        placeholder="Target Price"
+                        step="0.01"
+                        min="0"
+                    >
+                </div>
+                <button type="submit" class="btn btn-primary">
+                    <span id="add-indicator" class="htmx-indicator">...</span>
+                    Add
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Products List -->
+    <div class="card">
+        <div class="card-header">
+            <h2>Tracked Products ({{ products|length }})</h2>
+            <div class="card-actions">
+                <a href="/api/export?format=csv" class="btn btn-sm">Export CSV</a>
+            </div>
+        </div>
+
+        <div class="products-table">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Product</th>
+                        <th>Status</th>
+                        <th>Price</th>
+                        <th>Target</th>
+                        <th>Last Checked</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="products-list">
+                    {% for product in products %}
+                    {% include "partials/product_row.html" %}
+                    {% endfor %}
+                </tbody>
+            </table>
+
+            {% if not products %}
+            <div class="empty-state">
+                <p>No products being tracked yet.</p>
+                <p>Add a Costco UK product URL or item number above to get started.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,46 @@
+# Costco UK Stock Tracker - Docker Compose
+
+version: '3.8'
+
+services:
+  costco-tracker:
+    build: .
+    container_name: costco-tracker
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    volumes:
+      # Persist database and logs
+      - ./data:/app/data
+      # Optional: mount .env file
+      - ./.env:/app/.env:ro
+    environment:
+      - TZ=Europe/London
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/login"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+# Optional: Use PostgreSQL instead of SQLite
+# Uncomment below and update DATABASE_URL in .env
+
+#   postgres:
+#     image: postgres:15-alpine
+#     container_name: costco-tracker-db
+#     restart: unless-stopped
+#     environment:
+#       POSTGRES_USER: costco
+#       POSTGRES_PASSWORD: change-this-password
+#       POSTGRES_DB: costco_tracker
+#     volumes:
+#       - postgres_data:/var/lib/postgresql/data
+#     healthcheck:
+#       test: ["CMD-SHELL", "pg_isready -U costco"]
+#       interval: 10s
+#       timeout: 5s
+#       retries: 5
+
+# volumes:
+#   postgres_data:
