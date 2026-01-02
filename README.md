@@ -5,6 +5,8 @@ A self-hosted web application for tracking Costco UK product availability and pr
 ## Overview
 
 This application monitors Costco UK products for stock changes and price drops, sending notifications through multiple channels when configured conditions are met. It provides a web interface for managing tracked products, viewing price history, and configuring alerts.
+
+
 <img width="457" height="347" alt="image" src="https://github.com/user-attachments/assets/40a0537b-fd4c-439a-bb1a-bbe385aa4d81" />
 <img width="1221" height="1251" alt="image" src="https://github.com/user-attachments/assets/37b43b66-cd5b-408a-9957-f345a9a709eb" />
 <img width="1238" height="1063" alt="image" src="https://github.com/user-attachments/assets/d638213f-959c-4126-bda6-cfe9331fc14a" />
